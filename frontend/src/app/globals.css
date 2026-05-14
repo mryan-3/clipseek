@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-heading: var(--font-heading), sans-serif;
+  
+  /* Palette: Stone & Ink */
+  --color-canvas: #F2F2F2;    /* Warm Cool Grey */
+  --color-ink: #121212;      /* Off-Black */
+  --color-accent: #335C67;   /* Deep Teal */
+  --color-clay: #E0E0E0;     /* Border */
+  --color-surface: #FFFFFF;
+}
+
+:root {
+  --background: #F2F2F2;
+  --foreground: #121212;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: lowercase; /* Creative choice for Bricolage */
+}
+
+::selection {
+  background-color: #335C67;
+  color: #FFFFFF;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: reveal 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
