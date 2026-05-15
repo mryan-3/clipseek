@@ -1,3 +1,4 @@
+import os
 import torch
 import open_clip
 from PIL import Image
@@ -8,41 +9,41 @@ logger = logging.getLogger(__name__)
 class EmbeddingService:
     def __init__(self, model_name: str = "ViT-B-32", pretrained: str = "laion2b_s34b_b79k"):
         """
-        Initializes the CLIP model and preprocessing pipeline.
-        Uses local cache to avoid re-downloading.
+        Initializes OpenCLIP using the locally cached LAION model.
+        Bypasses CUDA issues by using the modern Safetensors format on CPU.
         """
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        cache_dir = "/home/ryanm/.cache/clip"
-        os.makedirs(cache_dir, exist_ok=True)
+        self.device = "cpu"
+        # Point to the existing HuggingFace hub cache
+        os.environ["HF_HOME"] = "/home/ryanm/.cache/huggingface"
         
-        logger.info(f"Loading CLIP model {model_name} on {self.device} (Cache: {cache_dir})...")
+        logger.info(f"Loading OpenCLIP {model_name} ({pretrained}) on {self.device}...")
         
-        # OpenCLIP uses the HF_HOME or TORCH_HOME env vars usually, 
-        # but we can set the cache_dir explicitly if needed by the library version.
-        # Most reliable way for local-first is setting the environment variable.
-        os.environ["XDG_CACHE_HOME"] = "/home/ryanm/.cache"
-        
-        self.model, _, self.preprocess = open_clip.create_model_and_transforms(
-            model_name, 
-            pretrained=pretrained, 
-            device=self.device,
-            cache_dir=cache_dir
-        )
-        self.tokenizer = open_clip.get_tokenizer(model_name)
-        logger.info("CLIP model loaded successfully.")
+        try:
+            # OpenCLIP handles loading from HF_HOME/hub automatically
+            self.model, _, self.preprocess = open_clip.create_model_and_transforms(
+                model_name, 
+                pretrained=pretrained, 
+                device=self.device
+            )
+            self.tokenizer = open_clip.get_tokenizer(model_name)
+            self.model.eval()
+            logger.info("OpenCLIP model loaded successfully from cache.")
+        except Exception as e:
+            logger.error(f"Failed to load OpenCLIP model: {e}")
+            raise
 
     def embed_image(self, image_path: str):
-        """Generates an embedding for a single image."""
+        """Generates a semantic embedding for a single image."""
         image = self.preprocess(Image.open(image_path)).unsqueeze(0).to(self.device)
-        with torch.no_grad(), torch.cuda.amp.autocast(enabled=(self.device == "cuda")):
+        with torch.no_grad():
             image_features = self.model.encode_image(image)
             image_features /= image_features.norm(dim=-1, keepdim=True)
         return image_features.cpu().numpy().flatten().tolist()
 
     def embed_text(self, text: str):
-        """Generates an embedding for a text query."""
+        """Generates a semantic embedding for a text query."""
         text_input = self.tokenizer([text]).to(self.device)
-        with torch.no_grad(), torch.cuda.amp.autocast(enabled=(self.device == "cuda")):
+        with torch.no_grad():
             text_features = self.model.encode_text(text_input)
             text_features /= text_features.norm(dim=-1, keepdim=True)
         return text_features.cpu().numpy().flatten().tolist()

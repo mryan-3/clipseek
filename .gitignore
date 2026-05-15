@@ -1,1 +1,8 @@
-node_modules/\n.venv/\n__pycache__/\n*.pyc\n.next/\n.DS_Store
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.next/
+.DS_Store
+data/
+
